@@ -149,6 +149,29 @@ def valid_space(piece, grid):
                 return False
     return True
 
+# Clear rows
+def clear_rows(grid, locked):
+    inc = 0
+    for i in range(len(grid)-1, -1, -1):
+        row = grid[i]
+        if (0, 0, 0) not in row:
+            inc += 1
+            ind = i
+            for j in range(len(row)):
+                try:
+                    del locked[(j, i)]
+                except:
+                    continue
+
+    if inc > 0:
+        for key in sorted(list(locked), key=lambda x: x[1])[::-1]:
+            x, y = key
+            if y < ind:
+                newKey = (x, y + inc)
+                locked[newKey] = locked.pop(key)
+
+    return inc
+
 # Check if game over
 def check_lost(positions):
     for pos in positions:
@@ -179,6 +202,17 @@ def draw_window(surface):
     surface.blit(label, (top_left_x + play_width / 2 - (label.get_width() / 2), 30))
     pygame.display.update()
 
+# Draw Score and lines
+def draw_text(surface, text, size, color, x, y):
+    font = pygame.font.SysFont('comicsans', size, bold=True)
+    label = font.render(text, 1, color)
+
+    surface.blit(label, (x, y))
+def draw_score(surface, score, lines_cleared, x, y):
+    draw_text(surface, 'Score: ' + str(score), 30, (255,255,255), x, y)
+    draw_text(surface, 'Lines cleared: ' + str(lines_cleared), 30, (255,255,255), x, y + 40)
+
+
 # Main function
 def main(win):
     locked_positions = {} 
@@ -202,7 +236,10 @@ def main(win):
             if not (valid_space(current_piece, grid)) and current_piece.row > 0:
                 current_piece.row -= 1
                 change_piece = True
-
+         
+        # Clear rows, move other rows down, and increase score
+        cleared_rows = clear_rows(grid, locked_positions)
+        score += cleared_rows * 10
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
